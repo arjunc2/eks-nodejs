@@ -1,0 +1,66 @@
+name: Node js app CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - feature/*
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install dependencies
+      run: npm install --save-dev supertest
+
+    - name: Run SonarQube Scan
+      uses: SonarSource/sonarqube-scan-action@v1.1.0
+      with:
+        projectBaseDir: .
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: https://sonarcloud.io  # For SonarCloud
+        SONAR_PROJECT_KEY: nodejs-eks-deploy
+        SONAR_ORG: arjunc2
+        SONAR_JAVASCRIPT_LCOV_REPORT_PATH: coverage/lcov.info
+        # OR
+        # SONAR_HOST_URL: http://your-sonarqube-server.com  # For SonarQube self-hosted
+        SONAR_SCANNER_OPTS: "-X"  # Enable debug logging for SonarScanner
+
+
+    - name: Run Snyk to check for vulnerabilities
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      # Issue: The step has both 'uses' and 'run' properties which is invalid syntax
+      # Should be split into separate steps or use only one approach
+      # Corrected version:
+    - name: Run Snyk to check for vulnerabilities
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+    - name: Analyze Snyk results  
+      run: |
+          snyk test --json > snyk-report.json || true
+          echo "Analyzing Snyk report for high/critical severity..."
+          HIGH_CRITICAL_COUNT=$(jq '[.vulnerabilities[] | select(.severity == "high" or .severity == "critical")] | length' snyk-report.json)
+          echo "High/Critical issues found: $HIGH_CRITICAL_COUNT"
+
+          if [ "$HIGH_CRITICAL_COUNT" -gt 0 ]; then
+            echo "❌ Build failed: High/Critical vulnerabilities detected"
+            exit 1
+          else
+            echo "✅ No high/critical vulnerabilities found. Proceeding..."
+          fi
