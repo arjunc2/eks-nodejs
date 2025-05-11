@@ -6,8 +6,8 @@ on:
       - main
 
 env:
-  ECR_REGISTRY: 920372986500.dkr.ecr.us-east-1.amazonaws.com
-  IMAGE_NAME: nagecr
+  ECR_REGISTRY: 920372986500.dkr.ecr.us-east-1.amazonaws.com/nagecr
+  IMAGE_NAME: 20250511205527
 
 jobs:
   deploy:
