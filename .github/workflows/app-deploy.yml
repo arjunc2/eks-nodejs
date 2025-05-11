@@ -26,20 +26,19 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Build Docker image
-      run: |
-        IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-        echo "Building image: $IMAGE_URI"
-        docker build -t $IMAGE_URI .
+    - name: Set dynamic image tag
+      id: tag
+      run: echo "IMAGE_TAG=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
 
-    - name: Push image to Amazon ECR
+    - name: Build and push Docker image
       run: |
-        IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-        docker push $IMAGE_URI
+        docker build -t $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
 
-    - name: Update manifest file with new image (optional)
+    - name: Update manifest image tag
       run: |
-        sed -i "s|image: .*|image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}|" k8s/deployment.yaml
+        sed -i "s|image: .*$|image: $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG|" ./k8s/deployment.yaml
+
 
     # - name: Build, tag, and push docker image to Amazon ECR
     #   env:
