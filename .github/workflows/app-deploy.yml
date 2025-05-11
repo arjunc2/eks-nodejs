@@ -6,8 +6,9 @@ on:
       - main
 
 env:
-  ECR_REGISTRY: 920372986500.dkr.ecr.us-east-1.amazonaws.com/nagecr
-  IMAGE_NAME: 20250511205527
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: nagecr
+  IMAGE_TAG: ${{ github.run_id }}-${{ github.run_number }}
 
 jobs:
   deploy:
@@ -31,20 +32,23 @@ jobs:
         aws-region: us-east-1
 
     - name: Login to Amazon ECR
-      uses: aws-actions/amazon-ecr-login@v1
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Set dynamic image tag
-      id: tag
-      run: echo "IMAGE_TAG=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
-
-    - name: Build and push Docker image
+    - name: Build Docker image
       run: |
-        docker build -t $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+        IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+        echo "Building image: $IMAGE_URI"
+        docker build -t $IMAGE_URI .
 
-    - name: Update manifest image tag
+    - name: Push image to Amazon ECR
       run: |
-        sed -i "s|image: .*$|image: $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG|" ./K8s/deployment.yaml
+        IMAGE_URI=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+        docker push $IMAGE_URI
+
+    - name: Update manifest file with new image (optional)
+      run: |
+        sed -i "s|image: .*|image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}|" K8s/deployment.yaml
 
 
     # - name: Build, tag, and push docker image to Amazon ECR
