@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 920372986500.dkr.ecr.us-east-1.amazonaws.com
+  IMAGE_NAME: nagecr
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -26,18 +31,23 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Set dynamic image tag
-      id: tag
-      run: echo "IMAGE_TAG=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build and push Docker image
+    - name: Generate Docker image tag
+      id: vars
+      run: |
+        IMAGE_TAG=$(date +%Y%m%d%H%M%S)
+        echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+        echo "Full tag will be $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
+
+    - name: Build Docker image
       run: |
         docker build -t $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
 
-    - name: Update manifest image tag
+    - name: Push Docker image
       run: |
-        sed -i "s|image: .*$|image: $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG|" ./k8s/deployment.yaml
+        docker push $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
 
 
     # - name: Build, tag, and push docker image to Amazon ECR
