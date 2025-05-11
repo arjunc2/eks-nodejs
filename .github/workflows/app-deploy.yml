@@ -44,7 +44,7 @@ jobs:
 
     - name: Update manifest image tag
       run: |
-        sed -i "s|image: .*$|image: $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG|" ./k8s/deployment.yaml
+        sed -i "s|image: .*$|image: $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG|" ./K8s/deployment.yaml
 
 
     # - name: Build, tag, and push docker image to Amazon ECR
