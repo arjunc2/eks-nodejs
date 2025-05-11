@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: nodejs-app
-          image: 920372986500.dkr.ecr.us-east-1.amazonaws.com/nagecr:1.1
+          image: 920372986500.dkr.ecr.us-east-1.amazonaws.com/nagecr:14959702464-16
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
