@@ -18,7 +18,7 @@ const app = express();
 
 app.get('/', (req, res) => {
   res.statusCode = 200;
-  const msg = 'Hello from EKS World, it was awesome';
+  const msg = 'Hello from EKS World, it';
   res.send(getPage(msg));
 });
 
